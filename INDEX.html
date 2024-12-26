@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signal Betting System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .balance {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .signal-box {
+      text-align: center;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    .reset {
+      background-color: red;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Signal Betting System</h1>
+  <div class="balance">
+    <strong>Current Balance:</strong> <span id="balance">200</span>
+  </div>
+  <div class="signal-box">
+    <strong>Current Signal:</strong> <span id="currentSignal">B</span><br>
+    <strong>Suggested Bet:</strong> <span id="suggestedBet">10</span>
+  </div>
+  <div>
+    <button id="bigButton">B</button>
+    <button id="smallButton">S</button>
+    <button id="resetButton" class="reset">Reset</button>
+  </div>
+  <h3>History</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Signal</th>
+        <th>Suggested Bet</th>
+        <th>Result</th>
+        <th>Balance</th>
+      </tr>
+    </thead>
+    <tbody id="historyTable"></tbody>
+  </table>
+
+  <script>
+    // Initialize state
+    let balance = localStorage.getItem("balance") ? parseInt(localStorage.getItem("balance")) : 200;
+    let signalIndex = localStorage.getItem("signalIndex") ? parseInt(localStorage.getItem("signalIndex")) : 0;
+    let history = localStorage.getItem("history") ? JSON.parse(localStorage.getItem("history")) : [];
+
+    // Static signals and bets
+    const signals = ["B", "S", "B", "B", "S", "B", "S", "S", "B", "B"];
+    const bets = [10, 20, 30];
+
+    // Initialize UI
+    document.getElementById("balance").textContent = balance;
+    updateSignal();
+    renderHistory();
+
+    // Event Listeners
+    document.getElementById("bigButton").addEventListener("click", () => handleResult("B"));
+    document.getElementById("smallButton").addEventListener("click", () => handleResult("S"));
+    document.getElementById("resetButton").addEventListener("click", resetSystem);
+
+    // Update signal
+    function updateSignal() {
+      const currentSignal = signals[signalIndex % signals.length];
+      const suggestedBet = bets[signalIndex % bets.length];
+      document.getElementById("currentSignal").textContent = currentSignal;
+      document.getElementById("suggestedBet").textContent = suggestedBet;
+    }
+
+    // Handle win/loss
+    function handleResult(userChoice) {
+      const currentSignal = signals[signalIndex % signals.length];
+      const suggestedBet = bets[signalIndex % bets.length];
+      let result;
+
+      if (userChoice === currentSignal) {
+        balance += suggestedBet - 1; // Win: Add bet minus 1
+        result = "Win";
+      } else {
+        balance -= suggestedBet; // Loss: Subtract bet
+        adjustNextSignal(); // Adjust next signal
+        result = "Loss";
+      }
+
+      // Update history
+      history.push({
+        signal: currentSignal,
+        bet: suggestedBet,
+        result: result,
+        balance: balance,
+      });
+
+      // Save state
+      signalIndex++;
+      saveState();
+      updateUI(); // Update all UI components
+    }
+
+    // Adjust next signal after loss
+    function adjustNextSignal() {
+      const nextIndex = (signalIndex + 1) % signals.length;
+      signals[nextIndex] = signals[nextIndex] === "B" ? "S" : "B"; // Flip next signal
+    }
+
+    // Update all UI components
+    function updateUI() {
+      document.getElementById("balance").textContent = balance; // Update balance
+      updateSignal(); // Update signal
+      renderHistory(); // Update history table
+    }
+
+    // Render history
+    function renderHistory() {
+      const table = document.getElementById("historyTable");
+      table.innerHTML = ""; // Clear table
+      history.forEach((entry) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${entry.signal}</td>
+          <td>${entry.bet}</td>
+          <td>${entry.result}</td>
+          <td>${entry.balance}</td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    // Reset system
+    function resetSystem() {
+      balance = 200;
+      signalIndex = 0;
+      history = [];
+      saveState();
+      updateUI();
+    }
+
+    // Save state to localStorage
+    function saveState() {
+      localStorage.setItem("balance", balance);
+      localStorage.setItem("signalIndex", signalIndex);
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+  </script>
+</body>
+</html>
